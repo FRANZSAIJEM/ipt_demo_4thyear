@@ -6,15 +6,66 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    public function loginForm(){
+
+    public function dashboard()
+    {
+        // Check if the user is authenticated
+        if (Auth::check()) {
+            return view('dashboard');
+        }
+
+        // If the user is not authenticated, redirect to the login form
+        return redirect()->route('loginForm');
+    }
+
+    public function loginForm()
+    {
+        if (Auth::check()) {
+            // User is already logged in, redirect to the dashboard
+            return view('dashboard');
+        }
+
         return view('auth.login');
+    }
+
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
+
+        $credentials = $request->only('email', 'password');
+
+        if (Auth::attempt($credentials)) {
+            // Check if the user's email is verified
+            if (Auth::user()->email_verified_at) {
+                // Authentication passed
+                return view('dashboard');
+            } else {
+                // Email is not verified
+                Auth::logout(); // Log the user out
+                return redirect()->route('loginForm')->with('error', 'Email not verified. Please check your email for verification instructions.');
+            }
+        }
+
+        // Authentication failed
+        return redirect()->route('loginForm')->with('error', 'Invalid credentials');
     }
 
     public function registerForm(){
         return view('auth.register');
+    }
+
+    public function logout()
+    {
+        Auth::logout();
+
+        return redirect()->route('loginForm'); // Redirect to the login form after logout
     }
 
     public function register(Request $request){
