@@ -13,6 +13,7 @@ use App\Http\Controllers\AuthController;
 |
 */
 Route::get('/', [AuthController::class, 'loginForm'])->name('loginForm');
+Route::post('/', [AuthController::class, 'login'])->name('login');
 Route::post('/dashboard', [AuthController::class, 'login'])->name('dashboard');
 
 Route::get('/register', [AuthController::class, 'registerForm'])->name('registerForm');
@@ -20,5 +21,6 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::get('/verification/{user}/{token}', [AuthController::class, 'verification']);
+// Route::get('/sendmail', [EmailController::class, 'sendMail']);
 
+Route::get('/verification/{user}/{token}', [AuthController::class, 'verification']);

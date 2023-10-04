@@ -5,5 +5,7 @@
 <p>Please click on the verification link to verify you account</p>
 
 <p>
-    <a href="{{ url('/verification/' . $user->id . '/' . $user->remember_token) }}">Click Me!</a>
+    <a href="{{ url('/verification/' . $user->id. '/' .$user->remember_token) }}">Click me! hehe</a>
+    {{-- <a href="{{ url('/verification/' . $user->id . '/' . $user->remember_token . '?return_to=' . urlencode('/original_page')) }}">Click Me!</a> --}}
+
 </p>

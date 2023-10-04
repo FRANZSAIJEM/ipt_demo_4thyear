@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\CustomerJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\User;
@@ -10,26 +11,19 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-
-    public function dashboard()
-    {
-        // Check if the user is authenticated
-        if (Auth::check()) {
-            return view('dashboard');
+    public function loginForm() {
+        if (auth()->check()) {
+            return redirect()->route('dashboard'); // Redirect authenticated users to the dashboard
         }
-
-        // If the user is not authenticated, redirect to the login form
-        return redirect()->route('loginForm');
+        return view('auth.login');
     }
 
-    public function loginForm()
-    {
-        if (Auth::check()) {
-            // User is already logged in, redirect to the dashboard
-            return view('dashboard');
+    public function registerForm() {
+        if (auth()->check()) {
+            return redirect()->route('dashboard'); // Redirect authenticated users to the dashboard
         }
 
-        return view('auth.login');
+        return view('auth.register');
     }
 
     public function login(Request $request)
@@ -39,41 +33,49 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        $credentials = $request->only('email', 'password');
+        $user = User::where('email', $request->email)->first();
 
-        if (Auth::attempt($credentials)) {
-            // Check if the user's email is verified
-            if (Auth::user()->email_verified_at) {
-                // Authentication passed
-                return view('dashboard');
-            } else {
-                // Email is not verified
-                Auth::logout(); // Log the user out
-                return redirect()->route('loginForm')->with('error', 'Email not verified. Please check your email for verification instructions.');
-            }
+        if (!$user || $user->email_verified_at == null) {
+            return redirect('/')->with('error', 'Sorry your account is not yet verified.');
         }
 
-        // Authentication failed
-        return redirect()->route('loginForm')->with('error', 'Invalid credentials');
+        $login = auth()->attempt([
+            'email' => $request->email,
+            'password' => $request->password
+        ]);
+
+        if (!$login) {
+            return back()->with('error', 'Invalid Credentials.');
+        }
+
+        return redirect('/dashboard');
+        // $credentials = $request->only('email', 'password');
+        // if (Auth::attempt($credentials)) {
+        //     if (Auth::user()->email_verified_at) {
+        //         return view('dashboard');
+        //     } else {
+        //         Auth::logout();
+        //         return redirect()->route('loginForm')->with('error', 'Email not verified. Please check your email for verification instructions.');
+        //     }
+        // }
+
+        // return redirect()->route('loginForm')->with('error', 'Invalid credentials');
     }
 
-    public function registerForm(){
-        return view('auth.register');
-    }
-
-    public function logout()
+    public function dashboard()
     {
-        Auth::logout();
+        if (Auth::check()) {
+            return view('dashboard');
+        }
 
-        return redirect()->route('loginForm'); // Redirect to the login form after logout
+        return redirect()->route('loginForm');
     }
 
-    public function register(Request $request){
+    public function register(Request $request) {
         $request->validate([
-            'name' => 'required|string',
+            'name'  => 'required|string',
             'email' => 'required|email|unique:users',
-            'password' => 'required|confirmed|string|min:6',
-
+            'password' => 'required|confirmed|string|min:6'
         ]);
 
         $token = Str::random(24);
@@ -83,21 +85,21 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'remember_token' => $token
-
-
         ]);
 
-        Mail::send('auth.verification-mail', ['user' => $user], function($mail) use($user){
-            $mail->to($user->email);
-            $mail->subject('Account Verification');
-        });
+        // dispatch(new CustomerJob($user->id));
+        CustomerJob::dispatch($user);
+        // Mail::send('auth.verification-mail', ['user' => $user], function($mail) use($user){
+        //     $mail->to($user->email);
+        //     $mail->subject('Account Verification');
+        // });
 
-        return redirect('/')->with('message', 'Your account has been created, Please check your email for verification');
+        return redirect('/')->with('message', 'Your account has been created. Please check email for the verification.');
     }
 
-    public function verification(User $user, $token){
-        if($user->remember_token !== $token){
-            return redirect('/')->with('error', 'Invalid token');
+    public function verification(User $user, $token) {
+        if($user->remember_token !== $token) {
+            return redirect('/')->with('error', 'Invalid token.');
         }
 
         $user->email_verified_at = now();
@@ -105,4 +107,11 @@ class AuthController extends Controller
 
         return redirect('/')->with('message', 'Your account has been verified');
     }
+
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        return redirect('/')->with('message', 'Logged out successfully.');
+    }
+
 }
