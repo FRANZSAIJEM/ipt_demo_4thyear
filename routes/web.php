@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\PluginController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -20,6 +21,17 @@ Route::get('/register', [AuthController::class, 'registerForm'])->name('register
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+
+
+Route::get('/plugins', [PluginController::class, 'index'])->name('plugins.index');
+Route::get('/plugins/create', [PluginController::class, 'create'])->name('plugins.create');
+Route::post('/plugins', [PluginController::class, 'store'])->name('plugins.store');
+
+
+
+
+
 
 // Route::get('/sendmail', [EmailController::class, 'sendMail']);
 
